@@ -87,6 +87,7 @@ export type BlogBodyBlock =
   /** Image id only; the API does not include a URL for ImageChooserBlock. */
   | StreamBlock<'image', number>
   | StreamBlock<'pull_quote', { author: string, source: string }>
+  /** `code` is HTML (rendered with v-html), not plain text. */
   | StreamBlock<'code', { language: string, code: string }>
   | StreamBlock<'quote', string>
   /** VideoBlock's definition wasn't in the schema; shape unknown until checked. */

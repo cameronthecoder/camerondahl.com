@@ -110,7 +110,9 @@ const languageLabel: Record<string, string> = {
           <figcaption class="border-b border-primary-800 bg-primary-900 px-4 py-1.5 font-mono text-xs text-primary-200">
             {{ languageLabel[block.value.language] ?? block.value.language }}
           </figcaption>
-          <pre class="overflow-x-auto bg-primary-950 p-4 text-sm leading-relaxed text-primary-50"><code :data-language="block.value.language">{{ block.value.code }}</code></pre>
+          <!-- `code` is HTML from the CMS (trusted source: only Cam can edit it). -->
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <pre class="overflow-x-auto bg-primary-950 p-4 text-sm leading-relaxed text-primary-50"><code :data-language="block.value.language" v-html="block.value.code" /></pre>
         </figure>
 
         <!-- image, video and file blocks need extra data from the API before they can render. -->
