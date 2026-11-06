@@ -1,7 +1,7 @@
 import type { NitroFetchOptions } from 'nitropack'
 
 /**
- * Fetch from the Wagtail API v2. Server-only: this is the one place that knows the CMS URL.
+ * Fetch from the Wagtail API v3. Server-only: this is the one place that knows the CMS URL.
  * `path` is relative to the API root, e.g. `/pages/` or `/pages/3/`.
  */
 export function wagtailFetch<T>(path: string, options: NitroFetchOptions<string> = {}) {
@@ -28,15 +28,3 @@ export function toCmsError(error: unknown) {
   })
 }
 
-/**
- * Fetch a draft from the CMS preview endpoint, `/api/v3/preview/` on the same host as
- * NUXT_WAGTAIL_API_BASE. Never cache the result: drafts change on every save.
- */
-export function wagtailPreviewFetch<T>(query: Record<string, string>) {
-  const { wagtail } = useRuntimeConfig()
-  if (!wagtail.apiBase) {
-    throw createError({ statusCode: 500, statusMessage: 'CMS is not configured (NUXT_WAGTAIL_API_BASE)' })
-  }
-  // Absolute URL, so wagtailFetch's v2 baseURL doesn't apply.
-  return wagtailFetch<T>(new URL('/api/v3/preview/', wagtail.apiBase).toString(), { query })
-}

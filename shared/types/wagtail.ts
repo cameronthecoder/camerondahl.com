@@ -1,4 +1,4 @@
-// Generic Wagtail API v2 response shapes. Model-specific field types live in ./cms.ts.
+// Generic Wagtail API v3 response shapes. Model-specific field types live in ./cms.ts.
 
 export interface WagtailPageMeta {
   type: string

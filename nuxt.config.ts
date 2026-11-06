@@ -18,7 +18,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     wagtail: {
-      // Server-only. Wagtail API v2 root, e.g. https://cms.example.com/api/v2
+      // Server-only. Wagtail API v3 root, e.g. https://cms.example.com/api/v3
       // Set with NUXT_WAGTAIL_API_BASE.
       apiBase: '',
     },

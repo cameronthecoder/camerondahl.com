@@ -4,11 +4,11 @@ Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduct
 
 ## Fetching CMS content (Wagtail)
 
-Content comes from a Wagtail headless CMS (REST API v2). Every query follows the same path:
+Content comes from a Wagtail headless CMS (REST API v3). Every query follows the same path:
 
 ```
 page (.vue) -> domain composable -> generic composable -> /api/cms proxy -> Wagtail
-               useProjects()        useWagtailPages()      server route      /api/v2/
+               useProjects()        useWagtailPages()      server route      /api/v3/
 ```
 
 | Layer | Location | Knows about |

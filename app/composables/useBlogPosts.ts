@@ -1,6 +1,6 @@
 // Blog posts are served by the CMS's `writings` endpoint:
-//   list:   /api/v2/writings/
-//   detail: /api/v2/writings/<slug>/
+//   list:   /api/v3/writings/
+//   detail: /api/v3/writings/<slug>/
 
 // Everything except `body`, so listings stay light.
 const SUMMARY_FIELDS = ['date', 'intro', 'tags', 'category', 'image', 'reading_time', 'author']

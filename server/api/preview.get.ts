@@ -1,5 +1,5 @@
 // Draft preview: GET /api/preview?content_type=blog.blogpage&token=...
-//   ->  <CMS host>/api/v3/preview/?content_type=...&token=...
+//   ->  <NUXT_WAGTAIL_API_BASE>/preview/?content_type=...&token=...
 // Used by the preview pages under app/pages/preview/.
 //
 // Separate from the cached /api/cms proxy on purpose: draft content changes on every save
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Cache-Control', 'no-store')
 
   try {
-    return await wagtailPreviewFetch<unknown>({ content_type: contentType, token })
+    return await wagtailFetch<unknown>('/preview/', { query: { content_type: contentType, token } })
   } catch (error) {
     throw toCmsError(error)
   }

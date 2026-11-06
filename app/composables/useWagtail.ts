@@ -77,7 +77,7 @@ export function useWagtailFirstPage<F, R = WagtailPage<F>>(
 }
 
 /**
- * List items from a non-page endpoint, e.g. a custom snippet viewset at `/api/v2/projects/`.
+ * List items from a non-page endpoint, e.g. a custom snippet viewset at `/api/v3/projects/`.
  * `endpoint` must be allowlisted in the /api/cms proxy.
  */
 export function useWagtailList<T, R = T>(
@@ -97,7 +97,7 @@ export function useWagtailList<T, R = T>(
 }
 
 /**
- * One item from a non-page endpoint, e.g. `writings/my-post` for `/api/v2/writings/my-post/`.
+ * One item from a non-page endpoint, e.g. `writings/my-post` for `/api/v3/writings/my-post/`.
  * `data` is null if it returns 404; other errors land in `error`.
  */
 export function useWagtailItem<T, R = T>(
@@ -147,7 +147,7 @@ export function useWagtailPageByPath<F, R = WagtailPage<F>>(
 
 /**
  * A draft page from wagtail-headless-preview, via the uncached /api/preview route
- * (which calls the CMS at /api/v3/preview/).
+ * (which calls the CMS at <api base>/preview/).
  * `contentType` is Wagtail's `app_label.model`, e.g. `blog.blogpage`.
  */
 export function useWagtailPreview<F, R = WagtailPage<F>>(

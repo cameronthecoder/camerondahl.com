@@ -1,4 +1,4 @@
-// Projects are Wagtail snippets, served by a custom API endpoint at /api/v2/projects/
+// Projects are Wagtail snippets, served by a custom API endpoint at /api/v3/projects/
 // (Wagtail's API has no built-in snippet endpoint). Order comes from the model's
 // Meta.ordering: `order`, then newest `date`.
 
