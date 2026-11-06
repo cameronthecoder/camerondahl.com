@@ -110,8 +110,23 @@ const languageLabel: Record<string, string> = {
           <figcaption class="border-b border-primary-800 bg-primary-900 px-4 py-1.5 font-mono text-xs text-primary-200">
             {{ languageLabel[block.value.language] ?? block.value.language }}
           </figcaption>
-          <!-- Plain source text: interpolate (escaped), never v-html, or `<slug:slug>` etc. vanish. -->
-          <pre class="overflow-x-auto bg-primary-950 p-4 text-sm leading-relaxed text-primary-50"><code :data-language="block.value.language">{{ block.value.code }}</code></pre>
+          <!--
+            `highlighted` is Pygments HTML from the CMS (trusted source; Pygments escapes the
+            code): its own <div><pre>, with colours and background as inline styles.
+          -->
+          <!-- eslint-disable vue/no-v-html -->
+          <div
+            v-if="block.value.highlighted"
+            :data-language="block.value.language"
+            class="text-sm [&_pre]:overflow-x-auto [&_pre]:p-4"
+            v-html="block.value.highlighted"
+          />
+          <!-- eslint-enable vue/no-v-html -->
+          <!-- No highlighting: `code` is plain source text, so interpolate it (escaped), never v-html. -->
+          <pre
+            v-else
+            class="overflow-x-auto bg-primary-950 p-4 text-sm leading-relaxed text-primary-50"
+          ><code :data-language="block.value.language">{{ block.value.code }}</code></pre>
         </figure>
 
         <!-- image, video and file blocks need extra data from the API before they can render. -->

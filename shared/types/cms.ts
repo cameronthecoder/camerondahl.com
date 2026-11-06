@@ -90,9 +90,11 @@ export type BlogBodyBlock =
   | StreamBlock<'pull_quote', { author: string | null, source: string | null }>
   /**
    * `code` is plain source text (with \r\n line endings), not HTML: always render it as text.
-   * The spec leaves this block's value untyped; this shape is from live data.
+   * `highlighted` is the same code as Pygments HTML (`<div class="highlight"><pre>…`, inline
+   * styles), safe to render with v-html. The spec leaves this block's value untyped; this
+   * shape is from live data.
    */
-  | StreamBlock<'code', { language: string, code: string }>
+  | StreamBlock<'code', { language: string, code: string, highlighted?: string | null }>
   | StreamBlock<'quote', string | null>
   | StreamBlock<'video', { video_url: string | null, caption: string | null, autoplay: boolean | null }>
   /** Document id only. */
