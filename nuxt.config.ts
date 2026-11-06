@@ -8,6 +8,14 @@ export default defineNuxtConfig({
     pageTransition: { name: 'page', mode: 'out-in' },
   },
 
+  routeRules: {
+    // Wagtail draft previews: always rendered on request, never cached or indexed.
+    '/preview/**': {
+      prerender: false,
+      headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' },
+    },
+  },
+
   runtimeConfig: {
     wagtail: {
       // Server-only. Wagtail API v2 root, e.g. https://cms.example.com/api/v2

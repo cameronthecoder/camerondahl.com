@@ -144,3 +144,20 @@ export function useWagtailPageByPath<F, R = WagtailPage<F>>(
     { transform: map },
   )
 }
+
+/**
+ * A draft page from wagtail-headless-preview, via the uncached /api/preview route
+ * (which calls the CMS at /api/v3/preview/).
+ * `contentType` is Wagtail's `app_label.model`, e.g. `blog.blogpage`.
+ */
+export function useWagtailPreview<F, R = WagtailPage<F>>(
+  contentType: string,
+  token: string,
+  map: PageMapper<F, R> = identity as PageMapper<F, R>,
+) {
+  return useAsyncData(
+    `wagtail:preview:${contentType}:${token}`,
+    () => $fetch<WagtailPage<F>>('/api/preview', { query: { content_type: contentType, token } }),
+    { transform: map },
+  )
+}

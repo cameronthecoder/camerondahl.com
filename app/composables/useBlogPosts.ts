@@ -30,12 +30,18 @@ export function useBlogPosts(options: { limit?: number } = {}) {
   )
 }
 
+function toPost(page: WagtailPage<BlogPageFields>): BlogPost {
+  return { ...toSummary(page), body: page.body ?? [] }
+}
+
 /** One full blog post by slug. `data` is null if no post has that slug. */
 export function useBlogPost(slug: string) {
-  return useWagtailItem<WagtailPage<BlogPageFields>, BlogPost>(
-    `writings/${slug}`,
-    page => ({ ...toSummary(page), body: page.body }),
-  )
+  return useWagtailItem<WagtailPage<BlogPageFields>, BlogPost>(`writings/${slug}`, toPost)
+}
+
+/** A draft blog post from a Wagtail preview token (see app/pages/preview/writings.vue). */
+export function useBlogPostPreview(token: string) {
+  return useWagtailPreview<BlogPageFields, BlogPost>('blog.blogpage', token, toPost)
 }
 
 export interface BlogPostSummary {

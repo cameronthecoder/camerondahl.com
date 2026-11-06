@@ -19,12 +19,7 @@ export default defineCachedEventHandler(
       // fetch follows it here, so callers get the page JSON directly.
       return await wagtailFetch<unknown>(`/${segments.join('/')}/`, { query: getQuery(event) })
     } catch (error) {
-      if (isError(error)) throw error // our own errors (e.g. CMS not configured) pass through as-is
-      const status = (error as { response?: { status?: number } }).response?.status
-      throw createError({
-        statusCode: status ?? 502,
-        statusMessage: status ? 'CMS request failed' : 'CMS unavailable',
-      })
+      throw toCmsError(error)
     }
   },
   {
