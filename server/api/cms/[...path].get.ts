@@ -1,9 +1,9 @@
 // Proxy: GET /api/cms/<path>?<query>  ->  <NUXT_WAGTAIL_API_BASE>/<path>/?<query>
 // Keeps the CMS URL server-side, avoids CORS, and caches responses.
 
-// `writings` (blog posts, incl. /writings/<slug>/) and `projects` (snippets, not yet live)
-// are custom endpoints on the CMS.
-const ALLOWED_ROOTS = new Set(['pages', 'images', 'documents', 'writings', 'projects'])
+// Read-only, anonymous v3 endpoints. `writings` (incl. /writings/<slug>/) and `about` are
+// custom endpoints on the CMS. `preview` is deliberately absent: it has its own uncached route.
+const ALLOWED_ROOTS = new Set(['pages', 'images', 'documents', 'writings', 'about'])
 const SAFE_SEGMENT = /^[\w-]+$/
 
 export default defineCachedEventHandler(

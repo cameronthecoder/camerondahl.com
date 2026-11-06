@@ -19,7 +19,9 @@ export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Cache-Control', 'no-store')
 
   try {
-    return await wagtailFetch<unknown>('/preview/', { query: { content_type: contentType, token } })
+    return await wagtailFetch<unknown>('/preview/', {
+      query: { content_type: contentType, token, rich_text_format: 'html' },
+    })
   } catch (error) {
     throw toCmsError(error)
   }

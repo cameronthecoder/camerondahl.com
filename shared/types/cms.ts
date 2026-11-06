@@ -1,7 +1,8 @@
-// Field types for each Wagtail model, matching its `api_fields` on the backend.
+// Field types for each Wagtail model, matching the v3 API schemas
+// (https://cms.camerondahl.com/api/v3/openapi.json, components.schemas).
 // Page base fields (id, title, meta) come from WagtailPage<T> in ./wagtail.ts.
 
-/** Output of the backend's ImageFieldSerializer: the original file, not a resized rendition. */
+/** `ImageData` in the spec: the original file, not a resized rendition. */
 export interface CmsImage {
   id: number
   title: string
@@ -11,18 +12,18 @@ export interface CmsImage {
 // --- HomePage (site root) ---------------------------------------------------
 
 export interface HomePageFields {
-  location: string
-  education: string
-  pronouns: string
+  location: string | null
+  education: string | null
+  pronouns: string | null
   open_to_work: boolean
-  tagline: string
+  tagline: string | null
 }
 
 // --- about.AboutPage ----------------------------------------------------------
 
 export interface AboutPageFields {
   /** Plain text (TextField); paragraphs separated by blank lines. */
-  biography: string
+  biography: string | null
 }
 
 // --- blog snippets ------------------------------------------------------------
@@ -44,7 +45,7 @@ export interface CmsCategory {
   description: string
 }
 
-// --- projects snippets (served by a custom /projects/ API endpoint) ------------
+// --- projects snippets (no v3 endpoint yet; see app/composables/useProjects.ts) ---
 
 export interface CmsTechnology {
   name: string
@@ -77,23 +78,25 @@ export interface ProjectFields {
 interface StreamBlock<T extends string, V> {
   type: T
   value: V
-  id: string
+  id: string | null
 }
 
 export type BlogBodyBlock =
-  | StreamBlock<'heading', string>
-  /** `text` is rich text HTML in Wagtail's raw format (internal links not expanded). */
-  | StreamBlock<'paragraph', { size: 'sm' | 'base' | 'lg' | 'xl', text: string }>
+  | StreamBlock<'heading', string | null>
+  /** `text` is rich text HTML; we request `rich_text_format=html`, so internal links are expanded. */
+  | StreamBlock<'paragraph', { size: 'sm' | 'base' | 'lg' | 'xl' | null, text: string | null }>
   /** Image id only; the API does not include a URL for ImageChooserBlock. */
-  | StreamBlock<'image', number>
-  | StreamBlock<'pull_quote', { author: string, source: string }>
-  /** `code` is HTML (rendered with v-html), not plain text. */
+  | StreamBlock<'image', number | null>
+  | StreamBlock<'pull_quote', { author: string | null, source: string | null }>
+  /**
+   * `code` is plain source text (with \r\n line endings), not HTML: always render it as text.
+   * The spec leaves this block's value untyped; this shape is from live data.
+   */
   | StreamBlock<'code', { language: string, code: string }>
-  | StreamBlock<'quote', string>
-  /** VideoBlock's definition wasn't in the schema; shape unknown until checked. */
-  | StreamBlock<'video', unknown>
+  | StreamBlock<'quote', string | null>
+  | StreamBlock<'video', { video_url: string | null, caption: string | null, autoplay: boolean | null }>
   /** Document id only. */
-  | StreamBlock<'file', number>
+  | StreamBlock<'file', number | null>
 
 // --- blog.BlogPage ------------------------------------------------------------
 
@@ -101,10 +104,11 @@ export interface BlogPageFields {
   /** ISO date, e.g. "2026-11-05". */
   date: string
   intro: string
-  tags: string[]
-  category: CmsCategory | null
-  image: CmsImage | null
-  reading_time: number
-  author: CmsAuthor | null
-  body: BlogBodyBlock[]
+  tags?: string[]
+  category?: CmsCategory | null
+  image?: CmsImage | null
+  /** Untyped in the spec; a number of minutes in practice. */
+  reading_time?: number | string | null
+  author?: CmsAuthor | null
+  body?: BlogBodyBlock[]
 }

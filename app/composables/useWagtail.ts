@@ -1,114 +1,68 @@
-// Generic Wagtail queries. Pages should not call these directly: wrap them in a domain
-// composable (e.g. useBlogPosts) that owns the model name, fields and view mapping.
+// Generic Wagtail API v3 queries. Pages should not call these directly: wrap them in a domain
+// composable (e.g. useBlogPosts) that owns the endpoint and view mapping.
 // All requests go through the /api/cms proxy (server/api/cms/[...path].get.ts).
+// Spec: https://cms.camerondahl.com/api/v3/openapi.json
 //
-// Each function takes an optional `map` that turns a raw API page into the shape the page
+// Each function takes an optional `map` that turns a raw API item into the shape the page
 // renders. Mapping happens once, when the data is fetched, and the mapped result is what
 // gets sent from the server to the browser.
 
-export interface WagtailPagesOptions {
-  /** Fields to return. Defaults to all (`*`). */
-  fields?: string[] | '*'
-  /** e.g. `-date`, `title`. */
-  order?: string
-  limit?: number
-  offset?: number
-  /** Only direct children of this page id. */
-  childOf?: number
-  search?: string
-  /** Extra Wagtail query params, e.g. `{ slug: 'my-post' }`. */
-  filters?: Record<string, string | number | boolean>
-  /**
-   * Cache key for this query. Defaults to one built from the query, so set it when two
-   * composables run the same query with different `map`s.
-   */
-  key?: string
-}
+type Query = Record<string, string | number | boolean | undefined>
+type Mapper<T, R> = (item: T) => R
+const identity = <T>(item: T) => item
 
-type PageMapper<F, R> = (page: WagtailPage<F>) => R
-const identity = <T>(page: T) => page
-
-function toQuery(type: string, options: WagtailPagesOptions) {
-  const { fields = '*' } = options
-  return {
-    type,
-    fields: fields === '*' ? '*' : fields.join(','),
-    order: options.order,
-    limit: options.limit,
-    offset: options.offset,
-    child_of: options.childOf,
-    search: options.search,
-    ...options.filters,
-  }
-}
-
-/** List pages of one model type, e.g. `useWagtailPages<BlogPageFields>('blog.BlogPage')`. */
-export function useWagtailPages<F, R = WagtailPage<F>>(
-  type: string,
-  options: WagtailPagesOptions = {},
-  map: PageMapper<F, R> = identity as PageMapper<F, R>,
-) {
-  const query = toQuery(type, options)
-  return useAsyncData(
-    options.key ?? `wagtail:pages:${JSON.stringify(query)}`,
-    () => $fetch<WagtailListResponse<WagtailPage<F>>>('/api/cms/pages/', { query }),
-    {
-      transform: res => res.items.map(map),
-      default: () => [] as R[],
-    },
-  )
-}
-
-/** First page of a type matching the options (e.g. a singleton, or a `slug` filter). `null` if none. */
-export function useWagtailFirstPage<F, R = WagtailPage<F>>(
-  type: string,
-  options: WagtailPagesOptions = {},
-  map: PageMapper<F, R> = identity as PageMapper<F, R>,
-) {
-  const query = toQuery(type, { ...options, limit: 1 })
-  return useAsyncData(
-    options.key ?? `wagtail:first:${JSON.stringify(query)}`,
-    () => $fetch<WagtailListResponse<WagtailPage<F>>>('/api/cms/pages/', { query }),
-    {
-      transform: res => (res.items[0] ? map(res.items[0]) : null),
-      default: () => null,
-    },
-  )
-}
+/** The API rejects `limit` above 20. */
+const MAX_PAGE_SIZE = 20
 
 /**
- * List items from a non-page endpoint, e.g. a custom snippet viewset at `/api/v3/projects/`.
- * `endpoint` must be allowlisted in the /api/cms proxy.
+ * List items from a paginated endpoint, e.g. `writings` for `/api/v3/writings/`.
+ * With `query.limit`, fetches that many; without it, follows `offset` until it has all
+ * `count` items. `endpoint` must be allowlisted in the /api/cms proxy.
  */
 export function useWagtailList<T, R = T>(
   endpoint: string,
-  query: Record<string, string | number | boolean | undefined> = {},
-  map: (item: T) => R = identity as (item: T) => R,
+  query: Query = {},
+  map: Mapper<T, R> = identity as Mapper<T, R>,
   key?: string,
 ) {
+  const url = `/api/cms/${endpoint}/`
+
   return useAsyncData(
     key ?? `wagtail:${endpoint}:${JSON.stringify(query)}`,
-    () => $fetch<WagtailListResponse<T>>(`/api/cms/${endpoint}/`, { query }),
+    async () => {
+      if (query.limit !== undefined) {
+        const limit = Math.min(Number(query.limit), MAX_PAGE_SIZE)
+        return (await $fetch<WagtailListResponse<T>>(url, { query: { ...query, limit } })).items
+      }
+
+      const items: T[] = []
+      for (let offset = 0; ; offset += MAX_PAGE_SIZE) {
+        const res = await $fetch<WagtailListResponse<T>>(url, { query: { ...query, limit: MAX_PAGE_SIZE, offset } })
+        items.push(...res.items)
+        if (!res.items.length || items.length >= res.count) return items
+      }
+    },
     {
-      transform: res => res.items.map(map),
+      transform: items => items.map(map),
       default: () => [] as R[],
     },
   )
 }
 
 /**
- * One item from a non-page endpoint, e.g. `writings/my-post` for `/api/v3/writings/my-post/`.
- * `data` is null if it returns 404; other errors land in `error`.
+ * One item from a detail endpoint, e.g. `writings/my-post` for `/api/v3/writings/my-post/`,
+ * or `about` for `/api/v3/about/`. `data` is null if it returns 404; other errors land in `error`.
  */
 export function useWagtailItem<T, R = T>(
   path: string,
-  map: (item: T) => R = identity as (item: T) => R,
+  query: Query = {},
+  map: Mapper<T, R> = identity as Mapper<T, R>,
 ) {
   return useAsyncData(
-    `wagtail:item:${path}`,
+    `wagtail:item:${path}:${JSON.stringify(query)}`,
     async () => {
       try {
-        return await $fetch<T>(`/api/cms/${path}/`)
+        return await $fetch<T>(`/api/cms/${path}/`, { query })
       } catch (error) {
         if ((error as { statusCode?: number }).statusCode === 404) return null
         throw error
@@ -121,10 +75,10 @@ export function useWagtailItem<T, R = T>(
   )
 }
 
-/** One page by id (all fields). */
+/** One page by id, with all its fields. */
 export function useWagtailPage<F, R = WagtailPage<F>>(
   id: number,
-  map: PageMapper<F, R> = identity as PageMapper<F, R>,
+  map: Mapper<WagtailPage<F>, R> = identity as Mapper<WagtailPage<F>, R>,
 ) {
   return useAsyncData(
     `wagtail:page:${id}`,
@@ -133,10 +87,10 @@ export function useWagtailPage<F, R = WagtailPage<F>>(
   )
 }
 
-/** One page by its site path, e.g. `/` or `/about/` (all fields). */
+/** One page by its site path, e.g. `/` (all fields). */
 export function useWagtailPageByPath<F, R = WagtailPage<F>>(
   path: string,
-  map: PageMapper<F, R> = identity as PageMapper<F, R>,
+  map: Mapper<WagtailPage<F>, R> = identity as Mapper<WagtailPage<F>, R>,
 ) {
   return useAsyncData(
     `wagtail:page-path:${path}`,
@@ -147,13 +101,13 @@ export function useWagtailPageByPath<F, R = WagtailPage<F>>(
 
 /**
  * A draft page from wagtail-headless-preview, via the uncached /api/preview route
- * (which calls the CMS at <api base>/preview/).
+ * (which calls the CMS at /api/v3/preview/).
  * `contentType` is Wagtail's `app_label.model`, e.g. `blog.blogpage`.
  */
 export function useWagtailPreview<F, R = WagtailPage<F>>(
   contentType: string,
   token: string,
-  map: PageMapper<F, R> = identity as PageMapper<F, R>,
+  map: Mapper<WagtailPage<F>, R> = identity as Mapper<WagtailPage<F>, R>,
 ) {
   return useAsyncData(
     `wagtail:preview:${contentType}:${token}`,

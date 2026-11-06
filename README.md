@@ -8,16 +8,25 @@ Content comes from a Wagtail headless CMS (REST API v3). Every query follows the
 
 ```
 page (.vue) -> domain composable -> generic composable -> /api/cms proxy -> Wagtail
-               useProjects()        useWagtailPages()      server route      /api/v3/
+               useBlogPosts()       useWagtailList()       server route      /api/v3/
 ```
 
 | Layer | Location | Knows about |
 | --- | --- | --- |
 | Page | `app/pages/*.vue` | Rendering only. Calls one domain composable. |
 | Domain composable | `app/composables/use<Thing>.ts` | Wagtail model name, fields, mapping to view data |
-| Generic composables | `app/composables/useWagtail.ts` | `useWagtailPages`, `useWagtailPage`, `useWagtailPageByPath` |
+| Generic composables | `app/composables/useWagtail.ts` | `useWagtailList`, `useWagtailItem`, `useWagtailPage`, `useWagtailPageByPath`, `useWagtailPreview` |
 | Proxy | `server/api/cms/[...path].get.ts` | The real CMS URL, caching (60s, stale-while-revalidate) |
 | Types | `shared/types/wagtail.ts`, `shared/types/cms.ts` | API shapes / per-model fields |
+
+The API spec is at `https://cms.camerondahl.com/api/v3/openapi.json`. Things to know about v3:
+
+- List endpoints return `{ items, count }` and reject `limit` above 20. `useWagtailList` pages
+  through them automatically unless you pass a `limit`.
+- `/pages/` lists only `id`, `title` and `meta`. For a page's fields use its detail endpoint,
+  `/pages/find/?html_path=...`, or a custom endpoint (`/writings/`, `/about/`).
+- Pass `rich_text_format: 'html'` to get rich text with internal links expanded.
+- Draft previews go through `server/api/preview.get.ts` (uncached), not the proxy.
 
 Helpers in `app/utils/cms.ts`: `cmsMediaUrl()` (absolute image URLs) and `formatDateRange()`.
 
@@ -28,22 +37,23 @@ Copy `.env.example` to `.env` and set `NUXT_WAGTAIL_API_BASE` (server-only) and
 
 ### Adding a new content type
 
-1. On the Wagtail model, list the fields the site needs in `api_fields`.
-2. Add a `<Model>Fields` interface to `shared/types/cms.ts`.
+1. Expose it on the CMS (a custom v3 endpoint, like `/writings/`), and check its schema in the spec.
+2. Add a `<Model>Fields` interface to `shared/types/cms.ts`, and the endpoint's first path
+   segment to `ALLOWED_ROOTS` in `server/api/cms/[...path].get.ts`.
 3. Create `app/composables/use<Thing>.ts`:
 
    ```ts
    export function useEvents() {
-     return useWagtailPages<EventPageFields, EventItem>(
-       'events.EventPage',
-       { order: '-start_date', key: 'events' },
+     return useWagtailList<WagtailPage<EventPageFields>, EventItem>(
+       'events',
+       { rich_text_format: 'html' },
        page => ({ title: page.title, when: page.start_date, imageUrl: cmsMediaUrl(page.image?.url) }),
      )
    }
    ```
 
-   The last argument maps raw API data to what the page needs (dates, image URLs), so pages
-   never touch raw API shapes. Use `useWagtailFirstPage` for singletons or slug lookups and
+   The map argument turns raw API data into what the page needs (dates, image URLs), so pages
+   never touch raw API shapes. Use `useWagtailItem` for one item (e.g. `events/<slug>`) and
    `useWagtailPageByPath` for a page at a known URL.
 
    Existing examples: `useHomePage`, `useAboutPage`, `useBlogPosts` / `useBlogPost`.

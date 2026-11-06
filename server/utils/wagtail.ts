@@ -15,6 +15,18 @@ export function wagtailFetch<T>(path: string, options: NitroFetchOptions<string>
     baseURL: wagtail.apiBase,
     headers: { Accept: 'application/json' },
     timeout: 10_000,
+    // Redirects are followed (pages/find/ relies on that), so an endpoint that wants a login
+    // ends on Wagtail's sign-in page with a 200. Treat anything that isn't JSON as a failure,
+    // so it surfaces as a CMS error instead of being cached and handed to pages as data.
+    onResponse({ response }) {
+      if (!response.headers.get('content-type')?.includes('json')) {
+        const signIn = /\/login\//.test(response.url)
+        throw createError({
+          statusCode: 502,
+          statusMessage: signIn ? 'CMS asked for a login (check NUXT_WAGTAIL_API_BASE)' : 'CMS returned non-JSON',
+        })
+      }
+    },
   })
 }
 

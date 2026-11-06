@@ -68,7 +68,7 @@ const languageLabel: Record<string, string> = {
     </figure>
 
     <div class="mt-12 space-y-6 leading-relaxed text-primary-900">
-      <template v-for="block in post.body" :key="block.id">
+      <template v-for="(block, i) in post.body" :key="block.id ?? i">
         <h2
           v-if="block.type === 'heading'"
           class="flex items-center gap-3 pt-6 font-serif text-2xl font-semibold text-primary-950 before:h-6 before:w-1 before:shrink-0 before:rounded-full before:bg-accent before:content-['']"
@@ -80,9 +80,9 @@ const languageLabel: Record<string, string> = {
         <!-- eslint-disable vue/no-v-html -->
         <div
           v-else-if="block.type === 'paragraph'"
-          :class="paragraphSize[block.value.size] ?? 'text-lg'"
+          :class="paragraphSize[block.value.size ?? 'base'] ?? 'text-lg'"
           class="space-y-4 [&_a]:font-medium [&_a]:text-primary-950 [&_a]:underline [&_a]:decoration-accent [&_a]:decoration-2 [&_a]:underline-offset-4 hover:[&_a]:decoration-primary [&_li]:ml-5 [&_ol]:list-decimal [&_ul]:list-disc"
-          v-html="block.value.text"
+          v-html="block.value.text ?? ''"
         />
         <!-- eslint-enable vue/no-v-html -->
 
@@ -110,9 +110,8 @@ const languageLabel: Record<string, string> = {
           <figcaption class="border-b border-primary-800 bg-primary-900 px-4 py-1.5 font-mono text-xs text-primary-200">
             {{ languageLabel[block.value.language] ?? block.value.language }}
           </figcaption>
-          <!-- `code` is HTML from the CMS (trusted source: only Cam can edit it). -->
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <pre class="overflow-x-auto bg-primary-950 p-4 text-sm leading-relaxed text-primary-50"><code :data-language="block.value.language" v-html="block.value.code" /></pre>
+          <!-- Plain source text: interpolate (escaped), never v-html, or `<slug:slug>` etc. vanish. -->
+          <pre class="overflow-x-auto bg-primary-950 p-4 text-sm leading-relaxed text-primary-50"><code :data-language="block.value.language">{{ block.value.code }}</code></pre>
         </figure>
 
         <!-- image, video and file blocks need extra data from the API before they can render. -->

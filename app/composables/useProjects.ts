@@ -1,6 +1,6 @@
-// Projects are Wagtail snippets, served by a custom API endpoint at /api/v3/projects/
-// (Wagtail's API has no built-in snippet endpoint). Order comes from the model's
-// Meta.ordering: `order`, then newest `date`.
+// Projects are Wagtail snippets. NOTE: the v3 API has no projects endpoint yet (its
+// snippets endpoint only covers blog.Author and projects.Technology, and needs a bearer
+// token), so this returns an error until one exists. Not used by any page yet.
 
 function toProject(item: ProjectFields): ProjectItem {
   return {
